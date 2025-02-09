@@ -3,8 +3,6 @@ from apps.category.models import Category
 from django.utils import timezone
 from ckeditor.fields import RichTextField
 
-from urllib.parse import urljoin
-from django.conf import settings
 # from ckeditor_uploader.fields import RichTextUploadingField ---> search
 
 
