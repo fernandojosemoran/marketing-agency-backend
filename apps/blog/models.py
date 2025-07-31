@@ -2,15 +2,15 @@ from django.db import models
 from apps.category.models import Category
 from django.utils import timezone
 from ckeditor.fields import RichTextField
+from core.config.aws import STORAGE_DESTINATION
 
 # from ckeditor_uploader.fields import RichTextUploadingField ---> search
-
 
 # Create your models here.
 
 
-def blog_thumbnail_directory(intance, file_name):
-    return f'upload/blog/{intance.title}/{file_name}'
+def blog_thumbnail_directory(instance: str, file_name: str) -> str:
+    return "blog" if STORAGE_DESTINATION else f'upload/blog/{instance.title}/{file_name}'
 
 
 class Post(models.Model):

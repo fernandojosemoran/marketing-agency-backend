@@ -9,11 +9,14 @@ https://docs.djangoproject.com/en/3.2/topics/settings/
 For the full list of settings and their values, see
 https://docs.djangoproject.com/en/3.2/ref/settings/
 """
+
+from .config import simpleJwt, aws, ckeditor, djoser, rest_framework
+
 from pathlib import Path
 
 import os
 import environ
-from datetime import timedelta
+
 
 env = environ.Env()
 environ.Env.read_env()
@@ -35,6 +38,7 @@ ALLOWED_HOSTS = env.list("ALLOWED_HOSTS_DEV")
 
 # Application definition
 
+
 DJANGO_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',
@@ -53,34 +57,20 @@ PROJECT_APPS = [
 
 THIRD_PARTY_APPS = [
     'corsheaders',
-    'rest_framework',
-    'ckeditor',
-    'ckeditor_uploader',
     'djoser',
-    # 'social-django',
-    'rest_framework_simplejwt',
-    'rest_framework_simplejwt.token_blacklist'
 ]
+
+THIRD_PARTY_APPS += aws.AWS_APPS
+THIRD_PARTY_APPS += rest_framework.REST_FRAMEWORK_APPS
+THIRD_PARTY_APPS += ckeditor.CKEDITOR_APPS
 
 INSTALLED_APPS = DJANGO_APPS + PROJECT_APPS + THIRD_PARTY_APPS
 
 # Ckeditor
 
-CKEDITOR_CONFIGS = {
-    'default': {
-        'toolbar': 'full',
-        'toolbar_Custom': [
-            ['Bold', 'Italic', 'Underline'],
-            ['NumberedList', 'BulletedList', '-', 'Outdent', 'Indent', '-',
-             'JustifyLeft', 'JustifyCenter', 'JustifyRight', 'JustifyBlock'],
-            ['Link', 'Unlink'],
-            ['RemoveFormat', 'Source'],
-        ],
-        'autoParagraph': False,
-    },
-}
+CKEDITOR_CONFIGS = ckeditor.CKEDITOR_CONFIGS
 
-CKEDITOR_UPLOAD_PATH = '/media/'
+CKEDITOR_UPLOAD_PATH = ckeditor.CKEDITOR_UPLOAD_PATH
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
@@ -167,14 +157,31 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/3.2/howto/static-files/
 
-STATIC_ROOT = os.path.join(BASE_DIR, 'static')
-STATIC_URL = '/static/'
+STORAGES = aws.STORAGES
 
-MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
-MEDIA_URL = '/media/'
+if aws.Destinations.isS3():
+    AWS_ACCESS_KEY_ID = aws.AWS_ACCESS_KEY_ID
+    AWS_SECRET_ACCESS_KEY = aws.AWS_SECRET_ACCESS_KEY
+    AWS_STORAGE_BUCKET_NAME = aws.AWS_STORAGE_BUCKET_NAME
+    AWS_S3_CUSTOM_DOMAIN = aws.AWS_S3_CUSTOM_DOMAIN
+    AWS_S3_OBJECT_PARAMETERS = aws.AWS_S3_OBJECT_PARAMETERS
+    AWS_LOCATION = aws.AWS_LOCATION
+
+    # static files settings
+    STATIC_URL = aws.STATIC_URL
+    STATICFILES_STORAGE = aws.STATICFILES_STORAGE
+
+    # public media settings
+    PUBLIC_MEDIA_LOCATION = aws.PUBLIC_MEDIA_LOCATION
+    MEDIA_URL = aws.MEDIA_URL
+    DEFAULT_FILE_STORAGE = aws.DEFAULT_FILE_STORAGE
+else:
+    STATIC_ROOT = os.path.join(BASE_DIR, 'static')
+    STATIC_URL = '/static/'
+    MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+    MEDIA_URL = '/media/'
 
 STATICFILES_DIRS_NAME = 'dist'
-
 STATICFILES_DIRS = [
     os.path.join(BASE_DIR, STATICFILES_DIRS_NAME)
 ]
@@ -186,53 +193,15 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 AUTH_USER_MODEL = "user.UserAccount"
 
-REST_FRAMEWORK = {
-    'DEFAULT_PERMISSION_CLASSES': [
-        'rest_framework.permissions.IsAuthenticatedOrReadOnly'
-    ]
-}
+REST_FRAMEWORK = rest_framework.REST_FRAMEWORK
 
-DJOSER = {
-    'LOGIN_FIELD': 'email',
-    'USER_CREATE_PASSWORD_RETYPE': True,
-    'PASSWORD_CHANGED_EMAIL_CONFIRMATION': True,
-    'USERNAME_CHANGED_EMAIL_CONFIRMATION': True,
-    'SEND_CONFIRMATION_EMAIL': True,
-    'SEND_ACTIVATION_EMAIL': True,
-    'SET_USERNAME_RETYPE': True,
-    'SET_PASSWORD_RETYPE': True,
-    'PASSWORD_RESET_CONFIRM_URL': 'password/reset/confirm/{uid}/{token}',
-    'USERNAME_RESET_CONFIRM_URL': 'username/reset/confirm/{uid}/{token}',
-    'ACTIVATION_URL': 'activate/{uid}/{token}',
-    # <--- social-auth-app-django and social-auth-core
-    'SOCIAL_AUTH_TOKEN_STRATEGY': 'djoser.social.token.jwt.TokenStrategy',
-    # <--- social-auth-app-django and social-auth-core
-    'SOCIAL_AUTH_ALLOWED_REDIRECT_URLS': ['http://localhost/google', 'http://localhost/facebook'],
-    'SERIALIZERS': {
-        'user_create': 'apps.user.serializers.UserSerializer',
-        'user': 'apps.user.serializers.UserSerializer',
-        'current_user': 'apps.user.serializers.UserSerializer',
-        'user_delete': 'djoser.serializers.UserDeleteSerializer'
-    },
-}
+DJOSER = djoser.DJOSER
 
-SIMPLE_JWT = {
-    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=5),
-    "REFRESH_TOKEN_LIFETIME": timedelta(days=1),
-    "ROTATE_REFRESH_TOKENS": True,
-    "BLACKLIST_AFTER_ROTATION": True,
 
-    "AUTH_HEADER_TYPES": ("Bearer",),
-    "AUTH_HEADER_NAME": "HTTP_AUTHORIZATION",
+SIMPLE_JWT = simpleJwt.SIMPLE_JWT
 
-    "USER_ID_FIELD": "id",
-    "USER_ID_CLAIM": "user_id",
-    "USER_AUTHENTICATION_RULE": "rest_framework_simplejwt.authentication.default_user_authentication_rule",
 
-    "AUTH_TOKEN_CLASSES": ("rest_framework_simplejwt.tokens.AccessToken",),
-    "TOKEN_USER_CLASS": "rest_framework_simplejwt.models.TokenUser",
-}
-
+# Allows
 CORS_ORIGIN_ALLOW_ALL = True
 # CORST_ORIGIN_WHITELIST = env.list('CORST_ORIGIN_WHITELIST_DEV')
 CSRF_TRUSTED_ORIGINS = env.list('CSRF_TRUSTED_ORIGINS_DEV')
@@ -245,6 +214,7 @@ if not DEBUG:
     ALLOWED_HOSTS = env.list("ALLOWED_HOSTS_DEPLOY")
 
     CORST_ORIGIN_WHITELIST = env.list('CORST_ORIGIN_WHITELIST_DEPLOY')
+
     CSRF_TRUSTED_ORIGINS = env.list('CSRF_TRUSTED_ORIGINS_DEPLOY')
 
     DATABASES = {

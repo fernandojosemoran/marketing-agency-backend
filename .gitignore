@@ -2,3 +2,10 @@ env
 .env
 .env.production
 core/.env
+
+.venv
+venv
+static
+media
+dist
+node_modules
