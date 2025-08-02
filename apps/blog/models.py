@@ -4,13 +4,22 @@ from django.utils import timezone
 from ckeditor.fields import RichTextField
 from core.config.aws import STORAGE_DESTINATION
 
+import hashlib
+
 # from ckeditor_uploader.fields import RichTextUploadingField ---> search
 
 # Create your models here.
 
 
-def blog_thumbnail_directory(instance: str, file_name: str) -> str:
-    return "blog" if STORAGE_DESTINATION else f'upload/blog/{instance.title}/{file_name}'
+def hash_image_name(text: str) -> str:
+    encoded_name = text.encode('utf-8')
+    hash_object = hashlib.sha256()
+    hash_object.update(encoded_name)
+    return hash_object.hexdigest()
+
+
+def blog_thumbnail_directory(instance, file_name: str) -> str:
+    return f"{hash_image_name(file_name)}-{file_name}" if STORAGE_DESTINATION else f"upload/blog/{instance.title}/{file_name}"
 
 
 class Post(models.Model):
